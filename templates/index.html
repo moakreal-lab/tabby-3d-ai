@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image to 3D Pipeline</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header>
+        <h1>Image to 3D Pipeline</h1>
+        <p>Drop a photo and get depth, point cloud, and mesh outputs in seconds.</p>
+      </header>
+
+      <section class="upload-card">
+        <input id="file-input" type="file" accept="image/*" />
+        <button id="upload-btn" disabled>Generate 3D</button>
+        <p id="status">Choose an image to begin.</p>
+      </section>
+
+      <section class="preview" id="preview" hidden>
+        <div>
+          <h2>Depth Map</h2>
+          <img id="depth-preview" alt="Depth map preview" />
+        </div>
+        <div>
+          <h2>Downloads</h2>
+          <ul>
+            <li><a id="point-cloud-link" href="#">Point cloud (.ply)</a></li>
+            <li><a id="mesh-link" href="#">Mesh (.ply)</a></li>
+            <li><a id="mesh-obj-link" href="#">Mesh (.obj)</a></li>
+          </ul>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const fileInput = document.getElementById('file-input');
+      const uploadBtn = document.getElementById('upload-btn');
+      const statusText = document.getElementById('status');
+      const previewSection = document.getElementById('preview');
+      const depthPreview = document.getElementById('depth-preview');
+      const pointCloudLink = document.getElementById('point-cloud-link');
+      const meshLink = document.getElementById('mesh-link');
+      const meshObjLink = document.getElementById('mesh-obj-link');
+
+      fileInput.addEventListener('change', () => {
+        uploadBtn.disabled = !fileInput.files.length;
+      });
+
+      uploadBtn.addEventListener('click', async () => {
+        if (!fileInput.files.length) return;
+        statusText.textContent = 'Uploading image and generating 3D assets...';
+        uploadBtn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        try {
+          const response = await fetch('/api/process', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            statusText.textContent = error.error || 'Something went wrong.';
+            uploadBtn.disabled = false;
+            return;
+          }
+
+          const data = await response.json();
+          depthPreview.src = data.depth_url;
+          pointCloudLink.href = data.point_cloud_url;
+          meshLink.href = data.mesh_url;
+          meshObjLink.href = data.mesh_obj_url;
+          previewSection.hidden = false;
+          statusText.textContent = '3D assets ready.';
+        } catch (error) {
+          statusText.textContent = 'Failed to reach the server.';
+        } finally {
+          uploadBtn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
