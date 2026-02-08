@@ -1,0 +1,79 @@
+# Tabby 3D AI 1.0
+
+This project is a fully working Python pipeline that turns a single image into a depth map, textured point cloud, and 3D mesh. Run it locally on any machine (CPU or GPU) with a simple CLI or via a local API.
+
+## Features
+- Depth estimation with MiDaS (no training required)
+- Textured point cloud generation with Open3D
+- Mesh reconstruction via Poisson surface reconstruction with color transfer
+- FastAPI endpoint for local automation
+
+## Setup
+
+### Quick start (clone + run)
+```bash
+git clone <your-repo-url> tabby-3d-ai
+cd tabby-3d-ai
+python -m venv .venv
+```
+
+### Windows (PowerShell or Command Prompt)
+```bat
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+> If you see “Defaulting to user installation,” it's not an error — it just means Python doesn’t have write access to the global site-packages. The install still works.
+
+### macOS / Linux
+```bash
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+## Run (CLI)
+
+```bash
+python main.py --image path/to/photo.jpg
+```
+
+Optional: choose a different output directory.
+
+```bash
+python main.py --image path/to/photo.jpg --output-dir outputs
+```
+
+## Run (API)
+
+```bash
+python main.py --serve
+```
+
+Then POST an image to `http://localhost:8000/api/process`. The response includes `estimated_seconds` and `elapsed_seconds`.
+
+### Use from any website
+The API allows cross-origin requests (CORS) so you can call it from any website frontend. In production, you should lock this down to your own domain.
+
+### Example: cURL
+```bash
+curl -X POST "http://localhost:8000/api/process" \
+  -F "file=@/path/to/photo.jpg"
+```
+
+### Example: Python
+```python
+import requests
+
+with open("photo.jpg", "rb") as f:
+    response = requests.post(
+        "http://localhost:8000/api/process",
+        files={"file": f},
+    )
+
+print(response.json())
+```
+
+## Notes
+- The first request will download the MiDaS model weights.
+- CPU works fine; GPU will be used automatically if available. The pipeline is tuned to run across a wide range of VRAM sizes.
+- The pipeline auto-resizes large images and downsamples the point cloud to keep processing fast on low-spec hardware.
