@@ -10,6 +10,16 @@ This project is a fully working Python pipeline that turns a single image into a
 
 ## Setup
 
+### Windows (PowerShell or Command Prompt)
+```bat
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+> If you see “Defaulting to user installation,” it's not an error — it just means Python doesn’t have write access to the global site-packages. The install still works.
+
+### macOS / Linux
 ```bash
 python -m venv .venv
 source .venv/bin/activate
