@@ -24,6 +24,10 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 MODEL_TYPE = "MiDaS_small"
+MAX_INPUT_SIZE = 640
+POINT_STRIDE = 4
+VOXEL_DOWNSAMPLE_SIZE = 0.01
+POISSON_DEPTH = 6
 
 
 def load_midas_model():
@@ -39,16 +43,28 @@ MODEL, TRANSFORM = load_midas_model()
 
 
 def run_depth_estimation(image: Image.Image) -> np.ndarray:
-    input_batch = TRANSFORM(image).to(DEVICE)
+    width, height = image.size
+    scale = min(MAX_INPUT_SIZE / max(width, height), 1.0)
+    if scale < 1.0:
+        resized = image.resize(
+            (int(width * scale), int(height * scale)), Image.Resampling.LANCZOS
+        )
+    else:
+        resized = image
+    input_batch = TRANSFORM(resized).to(DEVICE)
     with torch.no_grad():
         prediction = MODEL(input_batch)
         prediction = torch.nn.functional.interpolate(
             prediction.unsqueeze(1),
-            size=image.size[::-1],
+            size=resized.size[::-1],
             mode="bicubic",
             align_corners=False,
         ).squeeze()
     depth = prediction.cpu().numpy()
+    if resized.size != image.size:
+        depth = np.array(
+            Image.fromarray(depth).resize(image.size, Image.Resampling.BICUBIC)
+        )
     depth = (depth - depth.min()) / (depth.max() - depth.min() + 1e-8)
     return depth
 
@@ -65,9 +81,11 @@ def depth_to_point_cloud(depth: np.ndarray) -> o3d.geometry.PointCloud:
         intrinsics,
         depth_scale=1000.0,
         depth_trunc=3.0,
-        stride=2,
+        stride=POINT_STRIDE,
     )
     pcd.remove_non_finite_points()
+    if VOXEL_DOWNSAMPLE_SIZE > 0:
+        pcd = pcd.voxel_down_sample(VOXEL_DOWNSAMPLE_SIZE)
     pcd.estimate_normals()
     return pcd
 
@@ -95,7 +113,7 @@ def point_cloud_to_mesh(pcd: o3d.geometry.PointCloud) -> o3d.geometry.TriangleMe
     pcd.orient_normals_consistent_tangent_plane(10)
     mesh, _ = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(
         pcd,
-        depth=8,
+        depth=POISSON_DEPTH,
     )
     mesh.compute_vertex_normals()
     return mesh

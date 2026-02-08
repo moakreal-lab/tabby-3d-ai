@@ -27,3 +27,4 @@ Then open `http://localhost:8000`.
 ## Notes
 - The first request will download the MiDaS model weights.
 - CPU works fine; GPU will be used automatically if available. The default model targets low VRAM (~2 GB).
+- The pipeline auto-resizes large images and downsamples the point cloud to keep processing fast on low-spec hardware.
