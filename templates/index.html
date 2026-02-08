@@ -8,31 +8,64 @@
   </head>
   <body>
     <main class="container">
-      <header>
-        <h1>Tabby 3D AI 1.0</h1>
-        <p>Drop a photo and get depth, point cloud, textured point cloud, and mesh outputs in seconds.</p>
+      <header class="hero">
+        <div>
+          <span class="badge">Tabby 3D AI 1.0</span>
+          <h1>Image to 3D in seconds.</h1>
+          <p>
+            Upload a single photo and get a depth map, textured point cloud, and mesh with
+            zero training. Fast, simple, and built for low‑VRAM machines.
+          </p>
+          <div class="hero-actions">
+            <button id="upload-btn" class="primary" disabled>Generate 3D</button>
+            <span class="subtle">Unlimited generations. No sign‑in.</span>
+          </div>
+        </div>
+        <div class="hero-card">
+          <h2>Drop your image</h2>
+          <label class="dropzone" id="dropzone">
+            <input id="file-input" type="file" accept="image/*" />
+            <span>Drag & drop or click to browse</span>
+            <span class="file-name" id="file-name">No file selected</span>
+          </label>
+          <p id="status">Ready when you are.</p>
+        </div>
       </header>
 
-      <section class="upload-card">
-        <input id="file-input" type="file" accept="image/*" />
-        <button id="upload-btn" disabled>Generate 3D</button>
-        <p id="status">Choose an image to begin.</p>
-      </section>
-
       <section class="preview" id="preview" hidden>
-        <div>
-          <h2>Depth Map</h2>
+        <div class="panel">
+          <h2>Depth Map Preview</h2>
           <img id="depth-preview" alt="Depth map preview" />
         </div>
-        <div>
+        <div class="panel">
           <h2>Downloads</h2>
-          <ul>
+          <ul class="download-list">
             <li><a id="point-cloud-link" href="#">Point cloud (.ply)</a></li>
             <li><a id="mesh-link" href="#">Mesh (.ply)</a></li>
             <li><a id="mesh-obj-link" href="#">Mesh (.obj)</a></li>
           </ul>
+          <p class="hint">Tip: Open the .ply file in Blender or MeshLab.</p>
         </div>
       </section>
+
+      <section class="grid">
+        <div class="panel">
+          <h3>Step 1</h3>
+          <p>Drop an image. Portraits, products, or scenes work great.</p>
+        </div>
+        <div class="panel">
+          <h3>Step 2</h3>
+          <p>We estimate depth, build a point cloud, and reconstruct a mesh.</p>
+        </div>
+        <div class="panel">
+          <h3>Step 3</h3>
+          <p>Download files instantly. No waiting, no queues.</p>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <span>Tabby 3D AI 1.0 · Unlimited generations · Built for speed</span>
+      </footer>
     </main>
 
     <script>
@@ -44,9 +77,12 @@
       const pointCloudLink = document.getElementById('point-cloud-link');
       const meshLink = document.getElementById('mesh-link');
       const meshObjLink = document.getElementById('mesh-obj-link');
+      const dropzone = document.getElementById('dropzone');
+      const fileName = document.getElementById('file-name');
 
       fileInput.addEventListener('change', () => {
         uploadBtn.disabled = !fileInput.files.length;
+        fileName.textContent = fileInput.files.length ? fileInput.files[0].name : 'No file selected';
       });
 
       uploadBtn.addEventListener('click', async () => {
@@ -82,6 +118,27 @@
         } finally {
           uploadBtn.disabled = false;
         }
+      });
+
+      ['dragenter', 'dragover'].forEach((eventName) => {
+        dropzone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropzone.classList.add('dragging');
+        });
+      });
+
+      ['dragleave', 'drop'].forEach((eventName) => {
+        dropzone.addEventListener(eventName, (event) => {
+          event.preventDefault();
+          dropzone.classList.remove('dragging');
+        });
+      });
+
+      dropzone.addEventListener('drop', (event) => {
+        if (!event.dataTransfer?.files.length) return;
+        fileInput.files = event.dataTransfer.files;
+        fileName.textContent = event.dataTransfer.files[0].name;
+        uploadBtn.disabled = false;
       });
     </script>
   </body>
