@@ -46,6 +46,25 @@ python main.py --serve
 
 Then POST an image to `http://localhost:8000/api/process`. The response includes `estimated_seconds` and `elapsed_seconds`.
 
+### Example: cURL
+```bash
+curl -X POST "http://localhost:8000/api/process" \
+  -F "file=@/path/to/photo.jpg"
+```
+
+### Example: Python
+```python
+import requests
+
+with open("photo.jpg", "rb") as f:
+    response = requests.post(
+        "http://localhost:8000/api/process",
+        files={"file": f},
+    )
+
+print(response.json())
+```
+
 ## Notes
 - The first request will download the MiDaS model weights.
 - CPU works fine; GPU will be used automatically if available. The default model targets low VRAM (~2 GB).
